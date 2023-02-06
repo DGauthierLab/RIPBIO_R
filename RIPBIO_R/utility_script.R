@@ -26,7 +26,7 @@ axis(1, at = -3:3, labels = c("-3s", "-2s", "-1s", "mean", "1s", "2s", "3s"))
 
 
 #generate normally distributed random numbers
-pop1=rnorm(100,20.5,1)
+pop1=rnorm(100,19.5,1)
 pop2=rnorm(100,20,2)
 
 tickwts <- cbind(pop1,pop2)
