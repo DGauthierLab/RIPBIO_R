@@ -1,0 +1,26 @@
+{
+    "id": "5A909A40",
+    "path": "~/Documents/GitHub/workshop_data-analysis/adv_tidyverse_ggplot/data_mapping.R",
+    "project_path": null,
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1675460951135.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "31,22",
+        "scrollLine": "16"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1658857221,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1658857221,
+    "read_only": false,
+    "read_only_alternatives": []
+}

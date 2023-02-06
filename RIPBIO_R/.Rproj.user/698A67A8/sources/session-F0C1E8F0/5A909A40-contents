@@ -1,0 +1,224 @@
+#### INITIALIZATION ####
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+library(tidyverse)
+library(janitor)
+# install.packages("maps")
+# install.packages("viridis")
+require(maps)
+require(viridis)
+theme_set(
+  theme_void()
+)
+# install.packages("ggthemes")
+library(ggthemes)
+
+#### USER DEFINED VARIABLES ####
+
+inFilePath1 = "metadata.rds"
+
+
+#### READ IN DATA####
+
+read_rds(inFilePath1)
+
+
+#### SIMPLE MAP OF SITE LOCATIONS ####
+metadata %>%
+  ggplot(aes(x=lat_n,
+             y=long_e,
+             color = habitat,
+             shape = site)) +
+  geom_point(size = 3)
+
+#### MAP OF WORLD USING MAPS PKG ####
+#https://www.datanovia.com/en/blog/how-to-create-a-map-using-ggplot2/
+
+world_map <- map_data("world")
+
+world_map %>%
+ggplot(aes(x = long, 
+           y = lat, 
+           group = group)) +
+  geom_polygon(fill="tan", 
+               color = "brown4")
+
+#### MAP OF ONE REGION USING MAPS PKG ####
+map_data("world",
+         region = "Philippines") %>%
+  ggplot(aes(x = long, 
+             y = lat,
+             group = group)) +
+  geom_polygon(fill="lightgray",
+               colour = "black") 
+
+#### MAP OF ONE REGION USING MAPS PKG, ONLY NAME SOME SUBREGIONS, INCLUDE SURVEY SITES FROM METADATA ####
+
+subregion_label_data <- 
+  map_data("world",
+           region = "Philippines") %>%
+  dplyr::group_by(subregion,
+                  group) %>%
+  dplyr::summarize(long = mean(long), 
+                   lat = mean(lat)) %>%
+  filter(subregion == "Negros" |
+           subregion == "Cebu")
+
+region_label_data <- 
+  map_data("world",
+           region = "Philippines") %>%
+  dplyr::group_by(region) %>%
+  dplyr::summarize(long = mean(long), 
+                   lat = mean(lat))
+
+map_data("world",
+         region = "Philippines") %>%
+  ggplot(aes(long,
+             lat,
+             group=group)) +
+  geom_polygon(fill="lightgray",
+               color = "black") +
+  # subregion names
+  geom_text(data = subregion_label_data,
+            aes(label = subregion),
+            size = 6,
+            hjust = 0.5) +
+  # region names
+  geom_text(data = region_label_data,
+            aes(x = long,
+                y= lat,
+                label = region),
+            size = 10,
+            hjust = 0.5,
+            inherit.aes = FALSE) +
+  # this next block is where the data points are added from metadata
+  geom_point(data = metadata,
+             aes(x = long_e,
+                 y = lat_n,
+                 color = habitat),
+             inherit.aes = FALSE) +
+  theme_classic()
+
+
+#### zoom in on a set of subregions within a region ####
+
+# define window
+minLat = 7
+minLong = 119
+maxLat = 12
+maxLong = 122.5
+
+# make vector of unique subregions within window
+subregions_keep <-
+  map_data("world") %>%
+    filter(long > minLong,
+           long < maxLong,
+           lat > minLat,
+           lat < maxLat) %>%
+    distinct(subregion) %>%
+    pull()
+
+# filter world map down to only the subregions
+subregions_keep %>%
+  purrr::map_df(~ map_data("world") %>%
+               filter(subregion == .x)) %>%
+  # change lat and long values in keeper subregions that fall outside window to the window boundaries, prevents whacky shapes
+  mutate(lat = case_when(lat < minLat ~ minLat,
+                         lat > maxLat ~ maxLat,
+                         TRUE ~ lat),
+         long = case_when(long < minLong ~ minLong,
+                          long > maxLong ~ maxLong,
+                          TRUE ~ long)) %>%
+  ggplot(aes(long,
+             lat,
+             group=group)) +
+  # don't set color, otherwise you might get lines at the edges of the window
+  geom_polygon(fill="green4") +
+  geom_text(aes(x = 121,
+                y= 8,
+                label = "Sulu Sea"),
+            size = 10,
+            hjust = 0.5,
+            inherit.aes = FALSE) +
+  geom_point(data = metadata,
+             aes(x = long_e,
+                 y = lat_n,
+                 color = habitat),
+             inherit.aes = FALSE) +
+  theme_classic()
+
+#### set map completely by lat and long for regions and subregions within the window ####
+minLat = 4
+minLong = 115
+maxLat = 19
+maxLong = 128
+
+regions_keep <-
+  map_data("world") %>%
+  filter(long > minLong,
+         long < maxLong,
+         lat > minLat,
+         lat < maxLat) %>%
+  distinct(region) %>%
+  pull()
+
+subregions_keep <-
+  map_data("world") %>%
+  filter(long > minLong,
+         long < maxLong,
+         lat > minLat,
+         lat < maxLat) %>%
+  distinct(subregion) %>%
+  pull()
+
+region_label_data <- 
+  map_data("world") %>%
+  filter(long > minLong,
+         long < maxLong,
+         lat > minLat,
+         lat < maxLat) %>%
+  dplyr::group_by(region) %>%
+  dplyr::summarize(long = mean(long), 
+                   lat = mean(lat))
+
+map_data_regions <- 
+  regions_keep %>%
+  purrr::map_df(~ map_data("world") %>%
+                  filter(region == .x))
+
+subregions_keep %>%
+  purrr::map_df(~ map_data_regions %>%
+                  filter(subregion == .x)) %>%
+  
+  mutate(lat = case_when(lat < minLat ~ minLat,
+                         lat > maxLat ~ maxLat,
+                         TRUE ~ lat),
+         long = case_when(long < minLong ~ minLong,
+                          long > maxLong ~ maxLong,
+                          TRUE ~ long)) %>%
+  ggplot(aes(long,
+             lat,
+             group=group)) +
+  geom_polygon(fill="lightgray") +
+  # region names
+  geom_text(data = region_label_data,
+            aes(x = long,
+                y= lat,
+                label = region),
+            size = 10,
+            hjust = 0.5,
+            inherit.aes = FALSE) +
+  geom_text(aes(x = 121,
+                y= 8,
+                label = "Sulu Sea"),
+            size = 10,
+            hjust = 0.5,
+            color = "grey20",
+            inherit.aes = FALSE) +
+  geom_point(data = metadata,
+             aes(x = long_e,
+                 y = lat_n,
+                 color = habitat,
+                 shape = site),
+             inherit.aes = FALSE) +
+  theme_classic()
