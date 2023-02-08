@@ -1,6 +1,7 @@
 ####Initialize####
 library(ggplot2)
 library(tidyverse)
+library(pwr)
 ####Distributions####
 x_dhyper <- seq(0, 4, by = 1)
 
@@ -24,9 +25,12 @@ plot(x,y, type = "l", lwd = 2, axes = FALSE, xlab = "", ylab = "")
 axis(1, at = -3:3, labels = c("-3s", "-2s", "-1s", "mean", "1s", "2s", "3s"))
 
 
+####ttest####
+
 #generate normally distributed random numbers
-pop1=rnorm(100,20)
-pop2=rnorm(100,20)
+
+pop1=rnorm(100,21,1)
+pop2=rnorm(100,20,2)
 
 tickwts <- cbind(pop1,pop2)
 View(tickwts)
@@ -43,16 +47,34 @@ tickwts <- as_tibble(tickwts) %>%
 
 plot <- tickwts %>% 
   ggplot(aes(x=population,
-             y=weight)) +
+             y=weight_mg)) +
   geom_point(size = 3)
+plot
 
 boxplot <- tickwts %>% 
   ggplot(aes(x=population,
-             y=weight)) +
+             y=weight_mg)) +
   geom_boxplot()
+boxplot
 
 histo <- tickwts %>% 
-  ggplot(aes(y=weight, color=population)) +
+  ggplot(aes(y=weight_mg, color=population)) +
   geom_histogram() +
-  coord_flip()
+  coord_flip() +
+  geom_density(color = "red" 
+              )
 histo
+
+ggplot(tickwts, aes(x = (weight_mg),
+                     y = after_stat(density),
+       color=population)) + 
+  geom_histogram(alpha =0.5) +
+  geom_density( 
+               size = 2) +
+  geom_vline(xintercept=mean(pop1), color="red") +
+  geom_vline(xintercept=mean(pop2), color="blue")
+
+
+t.test(pop1,pop2)
+pwr.t.test(100,0.1,0.05)
+

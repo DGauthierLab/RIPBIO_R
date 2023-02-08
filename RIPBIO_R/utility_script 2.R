@@ -25,11 +25,8 @@ plot(x,y, type = "l", lwd = 2, axes = FALSE, xlab = "", ylab = "")
 axis(1, at = -3:3, labels = c("-3s", "-2s", "-1s", "mean", "1s", "2s", "3s"))
 
 
-####ttest####
-
 #generate normally distributed random numbers
-
-pop1=rnorm(100,21,1)
+pop1=rnorm(100,19.9,1)
 pop2=rnorm(100,20,2)
 
 tickwts <- cbind(pop1,pop2)
@@ -60,21 +57,32 @@ boxplot
 histo <- tickwts %>% 
   ggplot(aes(y=weight_mg, color=population)) +
   geom_histogram() +
-  coord_flip() +
-  geom_density(color = "red" 
-              )
+  coord_flip()
 histo
 
 ggplot(tickwts, aes(x = (weight_mg),
-                     y = after_stat(density),
-       color=population)) + 
+                    y = after_stat(density),
+                    color=population)) + 
   geom_histogram(alpha =0.5) +
   geom_density( 
-               size = 2) +
+    size = 2) +
   geom_vline(xintercept=mean(pop1), color="red") +
   geom_vline(xintercept=mean(pop2), color="blue")
 
 
-t.test(pop1,pop2)
-pwr.t.test(100,0.1,0.05)
+ttest <- t.test(pop1,pop2)
+ttest
+tstat <- ttest$statistic
+tstat
 
+
+pwr.t.test(100,0.5,0.05)
+
+
+plot(function(x) dt(x, df = 198), -4, 4, ylim = c(0, 0.7),
+     main = "t-distribution", yaxs = "i", xlab= "stdev")
+abline(v=1, col="darkgreen")
+abline(v=-1, col="darkgreen")
+abline(v=-2, col="green")
+abline(v=2,col="green", )
+       abline(v=tstat, col="red",lty = 4)
