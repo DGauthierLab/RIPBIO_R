@@ -2,6 +2,11 @@
 library(ggplot2)
 library(tidyverse)
 library(pwr)
+library(car)
+library(MASS)
+library(lmtest)
+library(tseries)
+library(ggfortify)
 ####Distributions####
 x_dhyper <- seq(0, 4, by = 1)
 
@@ -24,12 +29,13 @@ y <- dnorm(x)
 plot(x,y, type = "l", lwd = 2, axes = FALSE, xlab = "", ylab = "")
 axis(1, at = -3:3, labels = c("-3s", "-2s", "-1s", "mean", "1s", "2s", "3s"))
 
-
+####generate tibble of 3 tick populations####
 #generate normally distributed random numbers
-pop1=rnorm(100,19.9,1)
-pop2=rnorm(100,20,2)
+pop1=rnorm(100,18.2,1)
+pop2=rnorm(100,20.2,2)
+pop3=rnorm(100,21.7,1.5)
 
-tickwts <- cbind(pop1,pop2)
+tickwts <- cbind(pop1,pop2,pop3)
 View(tickwts)
 tickwts <- as_tibble(tickwts)
 
@@ -40,45 +46,83 @@ tickwts <- as_tibble(tickwts) %>%
     names_to = "population",
     values_to = "weight_mg"
   ) %>%
+  mutate(pop.f = as.factor(population)) %>%
+  mutate(pop.f=case_match(pop.f, "pop1" ~ "1", "pop2" ~ "2", "pop3" ~ "3")) %>%
+  mutate(pop.f=as.numeric(pop.f)) %>%
   arrange(population)
 
-plot <- tickwts %>% 
+pop.f <- as.factor(tickwts$population)
+case_match(pop.f, "pop1" ~ "1", "pop2" ~ "2", "pop3" ~ "3")
+
+####make scatterplot, boxplot, histograms####
+plot2 <- tickwts %>% 
+  filter(population=="pop1" | population =="pop2") %>%
+  ggplot(aes(x=population,
+             y=weight_mg)) +
+  geom_point(size = 3) 
+plot2
+
+
+
+
+plot3 <- tickwts %>% 
   ggplot(aes(x=population,
              y=weight_mg)) +
   geom_point(size = 3)
-plot
+plot3
 
-boxplot <- tickwts %>% 
+
+population.f <- factor(tickwts$population)
+recode_factor(population.f, pop1="1", pop2="2",pop3="3")
+reg<-lm(formula = weight_mg ~ pop.f,
+        data=tickwts)                      
+
+#get intercept and slope value
+coeff<-coefficients(reg)          
+intercept<-coeff[1]
+slope<- coeff[2]
+
+# add the regression line
+plot3+geom_abline(intercept = intercept, slope = slope, color="red", 
+                  linetype="dashed", linewidth=1.5)
+
+
+boxplot2 <- tickwts %>% 
+  filter(population == "pop1" | population == "pop2") %>%
   ggplot(aes(x=population,
              y=weight_mg)) +
   geom_boxplot()
-boxplot
+boxplot2
 
-histo <- tickwts %>% 
+boxplot3 <- tickwts %>% 
+  ggplot(aes(x=population,
+             y=weight_mg)) +
+  geom_boxplot()
+boxplot3
+
+histo2 <- tickwts %>% 
+  filter(population == "pop1" | population == "pop2") %>%
   ggplot(aes(y=weight_mg, color=population)) +
   geom_histogram() +
   coord_flip()
-histo
+histo2
 
-ggplot(tickwts, aes(x = (weight_mg),
-                    y = after_stat(density),
-                    color=population)) + 
-  geom_histogram(alpha =0.5) +
-  geom_density( 
-    size = 2) +
-  geom_vline(xintercept=mean(pop1), color="red") +
-  geom_vline(xintercept=mean(pop2), color="blue")
+histo3 <- tickwts %>% 
+  ggplot(aes(y=weight_mg, color=population)) +
+  geom_histogram() +
+  coord_flip()
+histo3
 
-
+####T-test and T-statistic for pop1,pop2####
 ttest <- t.test(pop1,pop2)
 ttest
 tstat <- ttest$statistic
 tstat
 
-
+####power calculation####
 pwr.t.test(100,0.5,0.05)
 
-
+####t-distribution graphic####
 plot(function(x) dt(x, df = 198), -4, 4, ylim = c(0, 0.7),
      main = "t-distribution", yaxs = "i", xlab= "stdev")
 abline(v=1, col="darkgreen")
@@ -86,3 +130,20 @@ abline(v=-1, col="darkgreen")
 abline(v=-2, col="green")
 abline(v=2,col="green", )
        abline(v=tstat, col="red",lty = 4)
+       
+####regression example####
+       set.seed(1234)
+       
+       ##Linear Regression
+       #Generate the independent variable and the error
+       x1=rnorm(100,50,9)
+       x2=rnorm(100,200,64)
+       error=rnorm(100,0,16)
+       #Generate the dependent variable (b0=150, b1=-4, b2=2.5)
+       y1=150-(4*x1)+(2.5*x2)+error
+       #create the model
+       m1=lm(y1~x2)
+       summary(m1)
+       plot(x1,y1)
+       abline(lm(y1~x1))
+       #autoplot(m1)
