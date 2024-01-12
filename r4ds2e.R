@@ -48,7 +48,7 @@ ggplot(
   mapping = aes(x = flipper_length_mm, y = body_mass_g, color = species)
 ) +
   geom_point() +
-  geom_smooth(method = "lm")
+  geom_smooth(method="lm")
 
 #apply the smoothed line to the entire data set, not to individual species
 ggplot(
