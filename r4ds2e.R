@@ -1,4 +1,3 @@
-#testtest
 #R4DS script
 #modified 1/9/24
 
@@ -81,3 +80,6 @@ ggplot(
     color = "Species", shape = "Species"
   ) +
   scale_color_colorblind()
+
+##got to here on Jan. 10
+
