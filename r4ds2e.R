@@ -83,3 +83,98 @@ ggplot(
 
 ##got to here on Jan. 10
 
+##Section 1.3
+
+ggplot(
+  data = penguins,
+  mapping = aes(x = flipper_length_mm, y = body_mass_g)
+) +
+  geom_point()
+
+#more concise specification
+
+ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g)) + 
+  geom_point()
+
+#with a "pipe"
+
+penguins |> 
+  ggplot(aes(x = flipper_length_mm, y = body_mass_g)) + 
+  geom_point()
+
+##Section 1.4
+
+#categorical variable and a new geom
+ggplot(penguins, aes(x = species)) +
+  geom_bar()
+
+#reordered factors
+ggplot(penguins, aes(x = fct_infreq(species))) +
+  geom_bar()
+
+#numerical variable and geom_histogram
+ggplot(penguins, aes(x = body_mass_g)) +
+  geom_histogram(binwidth = 200)
+
+ggplot(penguins, aes(x = body_mass_g)) +
+  geom_histogram(binwidth = 20)
+
+ggplot(penguins, aes(x = body_mass_g)) +
+  geom_histogram(binwidth = 2000)
+
+
+#geom_density
+ggplot(penguins, aes(x = body_mass_g)) +
+  geom_density()
+
+#1.4.3 exercises
+
+# 1) Make a bar plot of species of penguins, where you assign species to the y aesthetic. How is this plot different?
+#   
+# 2)  How are the following two plots different? Which aesthetic, color or fill, is more useful for changing the color of bars?
+#   
+#     ggplot(penguins, aes(x = species)) +
+#       geom_bar(color = "red")
+# 
+#     ggplot(penguins, aes(x = species)) +
+#       geom_bar(fill = "red")
+# 
+# 3) What does the bins argument in geom_histogram() do?
+#   
+# 4) Make a histogram of the carat variable in the diamonds dataset that is available when you load the tidyverse package. 
+#     Experiment with different binwidths. What binwidth reveals the most interesting patterns?
+# 
+
+##Section 1.5
+
+#Relationship between numerical and categorical variable with different geoms
+ggplot(penguins, aes(x = species, y = body_mass_g)) +
+  geom_boxplot()
+
+ggplot(penguins, aes(x = body_mass_g, color = species)) +
+  geom_density(linewidth = 0.75)
+
+#mapping variable species to both color and fill aesthetics
+#setting fill aesthetic to a value (0.5)
+ggplot(penguins, aes(x = body_mass_g, color = species, fill = species)) +
+  geom_density(alpha = 0.5)
+
+#stacked barplot
+ggplot(penguins, aes(x = island, fill = species)) +
+  geom_bar()
+
+#using position argument to change behavior of stacked barplot
+ggplot(penguins, aes(x = island, fill = species)) +
+  geom_bar(position = "fill")
+
+#getting complicated.  Three or more variables
+#basic plot
+ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g)) +
+  geom_point()
+#adding mappings for species and island
+ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g)) +
+  geom_point(aes(color = species, shape = island))
+#cleaner way to do this with faceting
+ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g)) +
+  geom_point(aes(color = species, shape = species)) +
+  facet_wrap(~island)
