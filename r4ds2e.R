@@ -125,7 +125,7 @@ ggplot(penguins, aes(x = body_mass_g)) +
 
 #geom_density
 ggplot(penguins, aes(x = body_mass_g)) +
-  geom_density()
+  geom_density() +
 
 #1.4.3 exercises
 
