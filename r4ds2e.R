@@ -188,6 +188,7 @@ ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g)) +
 
 sin(pi / 2)
 
+#setting variables
 x <- 3 * 4
 
 # create vector of primes
