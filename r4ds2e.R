@@ -178,3 +178,37 @@ ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g)) +
 ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g)) +
   geom_point(aes(color = species, shape = species)) +
   facet_wrap(~island)
+
+#Section 2: Workflow
+
+#Basics
+1 / 200 * 30
+
+(59 + 73 + 2) / 3
+
+sin(pi / 2)
+
+x <- 3 * 4
+
+# create vector of primes
+primes <- c(2, 3, 5, 7, 11, 13)
+
+# multiply primes by 2
+primes * 2
+
+primes - 1
+
+#snake case
+#i_use_snake_case
+
+##functions
+#function_name(argument1 = value1, argument2 = value2, ...)
+
+seq(from = 1, to = 10)
+
+seq(1, 10)
+
+
+
+
+
