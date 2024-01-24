@@ -5,6 +5,7 @@
 if (!require('tidyverse')) install.packages('tidyverse')
 if (!require('palmerpenguins')) install.packages('palmerpenguins')
 if (!require('ggthemes')) install.packages('ggthemes')
+if (!require('nycflights13')) install.packages('nycflights13')
 
 #library loadings
 library(tidyverse)
@@ -151,15 +152,21 @@ ggplot(penguins, aes(x = body_mass_g)) +
 ggplot(penguins, aes(x = species, y = body_mass_g)) +
   geom_boxplot()
 
+ggplot(penguins, aes(x = species, y = body_mass_g)) +
+  geom_point()
+
 ggplot(penguins, aes(x = body_mass_g, color = species)) +
   geom_density(linewidth = 0.75)
 
 #mapping variable species to both color and fill aesthetics
 #setting fill aesthetic to a value (0.5)
 ggplot(penguins, aes(x = body_mass_g, color = species, fill = species)) +
-  geom_density(alpha = 0.5)
+  geom_density(alpha = .1)
 
 #stacked barplot
+ggplot(penguins, aes(x = island)) +
+  geom_bar()
+
 ggplot(penguins, aes(x = island, fill = species)) +
   geom_bar()
 
@@ -177,12 +184,12 @@ ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g)) +
 #cleaner way to do this with faceting
 ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g)) +
   geom_point(aes(color = species, shape = species)) +
-  facet_wrap(~island)
+  facet_grid(~species)
 
 #Section 2: Workflow
 
 #Basics
-1 / 200 * 30
+1 / (200 * 30)
 
 (59 + 73 + 2) / 3
 
@@ -193,6 +200,10 @@ x <- 3 * 4
 
 # create vector of primes
 primes <- c(2, 3, 5, 7, 11, 13)
+primes_2 <- c(17, 19, 23)
+my_variable <- c(2:13)
+
+primes_2 <- c(17, 19, 23)
 
 # multiply primes by 2
 primes * 2
@@ -209,7 +220,65 @@ seq(from = 1, to = 10)
 
 seq(1, 10)
 
+##Section 3: Data Manipulation
 
+library(nycflights13)
+library(tidyverse)
+
+flights
+
+#The first tidyverse row function: filter
+
+#filter operates on ROWS
+flights |> 
+  filter(dep_delay > 120)
+
+# Flights that departed on January 1
+flights |> 
+  filter(month == 1 & day == 1)
+
+# Flights that departed in January or February
+flights |> 
+  filter(month == 1 | month == 2)
+
+# A shorter way to select flights that departed in January or February
+flights |> 
+  filter(month %in% c(1, 2))
+
+#saving to a variable
+jan1 <- flights |> 
+  filter(month == 1 & day == 1)
+
+##Section 3.2.2: Common Mistakes
+
+flights |> 
+  filter(month = 1)
+
+flights |> 
+  filter(month == 1 | 2)
+
+#3.2.3 our next row function: arrange
+#changes order of rows based on column values
+
+flights |> 
+  arrange(year, month, day, dep_time)
+
+flights |> 
+  arrange(desc(dep_delay))
+
+#3.2.4 distinct
+
+# Remove duplicate rows, if any
+flights |> 
+  distinct()
+
+# Find all unique origin and destination pairs
+flights |> 
+  distinct(origin, dest)
+
+#as above, keeping all columns
+flights |> 
+  distinct(origin, dest, .keep_all = TRUE)
 
 
 
