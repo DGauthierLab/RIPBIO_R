@@ -280,5 +280,71 @@ flights |>
 flights |> 
   distinct(origin, dest, .keep_all = TRUE)
 
+#Section 3.3: Column functions
+
+#mutate (you'll probably use this one more than any other)
+flights |> 
+  mutate(
+    gain = dep_delay - arr_delay,
+    speed = distance / air_time * 60
+  )
+
+flights |> 
+  mutate(
+    gain = dep_delay - arr_delay,
+    speed = distance / air_time * 60,
+    .before = 1
+  )
+
+flights |> 
+  mutate(
+    gain = dep_delay - arr_delay,
+    speed = distance / air_time * 60,
+    .after = day
+  )
+
+flights |> 
+  mutate(
+    gain = dep_delay - arr_delay,
+    hours = air_time / 60,
+    gain_per_hour = gain / hours,
+    .keep = "used"
+  )
+
+#select: filters by column instead of row
+
+flights |> 
+  select(year, month, day)
+
+flights |> 
+  select(year:day)
+
+flights |> 
+  select(!year:day)
+
+flights |> 
+  select(where(is.character))
+
+#one way to rename a column
+flights |> 
+  select(tail_num = tailnum)
+
+#rename can also be used for this
+flights |> 
+  rename(tail_num = tailnum)
+
+#relocate
+
+flights |> 
+  relocate(time_hour, air_time)
+
+flights |> 
+  relocate(year:dep_time, .after = time_hour)
+flights |> 
+  relocate(starts_with("arr"), .before = dep_time)
+
+
+
+    
 
 
