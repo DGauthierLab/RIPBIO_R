@@ -241,6 +241,13 @@ flights |>
 flights |> 
   filter(month == 1 | month == 2)
 
+# multiple operations in a pipe
+
+flights |> 
+  filter(dep_delay > 120) |>
+  filter(month == 1 & day == 1)
+
+
 # A shorter way to select flights that departed in January or February
 flights |> 
   filter(month %in% c(1, 2))
