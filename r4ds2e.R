@@ -293,7 +293,8 @@ flights |>
 new_flights <- flights |> 
   mutate(
     gain = dep_delay - arr_delay,
-    speed = distance / air_time * 60
+    speed = distance / air_time * 60,
+    .after = day
   )
 
 View(new_flights)
@@ -332,14 +333,14 @@ flights |>
   select(!year:day)
 
 flights |> 
-  select(where(is.character))
+  select(where(is.numeric))
 
 #one way to rename a column
-flights |> 
+new_flights <- flights |> 
   select(tail_num = tailnum)
 
 #rename can also be used for this
-flights |> 
+new_flights <- flights |> 
   rename(tail_num = tailnum)
 
 #relocate
