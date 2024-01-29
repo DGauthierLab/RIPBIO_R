@@ -267,8 +267,8 @@ flights |>
 #3.2.3 our next row function: arrange
 #changes order of rows based on column values
 
-flights |> 
-  arrange(year, month, day, dep_time)
+var <- flights |> 
+  arrange(dep_delay,year, month, day)
 
 flights |> 
   arrange(desc(dep_delay))
@@ -290,11 +290,13 @@ flights |>
 #Section 3.3: Column functions
 
 #mutate (you'll probably use this one more than any other)
-flights |> 
+new_flights <- flights |> 
   mutate(
     gain = dep_delay - arr_delay,
     speed = distance / air_time * 60
   )
+
+View(new_flights)
 
 flights |> 
   mutate(
