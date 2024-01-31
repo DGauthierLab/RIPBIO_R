@@ -353,8 +353,42 @@ flights |>
 flights |> 
   relocate(starts_with("arr"), .before = dep_time)
 
+##Section 3.5: group_by() and summarize()
 
+flights |> 
+  group_by(month)
 
-    
+flights |> 
+  group_by(month) |> 
+  summarize(
+    avg_delay = mean(dep_delay)
+  )
 
+flights |> 
+  group_by(month) |> 
+  summarize(
+    avg_delay = mean(dep_delay, na.rm = TRUE)
+  )
 
+flights |> 
+  group_by(month) |> 
+  summarize(
+    avg_delay = mean(dep_delay, na.rm = TRUE), 
+    n = n()
+  )
+
+#try this with slice_head, slice_tail, slice_min, slice_sample
+
+flights |> 
+  group_by(dest) |> 
+  slice_max(arr_delay, n = 1) |>
+  relocate(dest)
+
+#grouping by multiple variables
+
+daily <- flights |>  
+  group_by(year, month, day)
+daily
+
+daily_flights <- daily |> 
+  summarize(n = n())
