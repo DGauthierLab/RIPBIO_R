@@ -374,14 +374,18 @@ flights |>
   group_by(month) |> 
   summarize(
     avg_delay = mean(dep_delay, na.rm = TRUE), 
-    n = n()
+    n = n(),
+    sd_delay = sd(dep_delay, na.rm = TRUE),
+    max_delay = max(dep_delay, na.rm = TRUE),
+    min_delay = min(dep_delay, na.rm = TRUE)
+    
   )
 
 #try this with slice_head, slice_tail, slice_min, slice_sample
 
 flights |> 
   group_by(dest) |> 
-  slice_max(arr_delay, n = 1) |>
+  slice_min(arr_delay, n = 1) |>
   relocate(dest)
 
 #grouping by multiple variables
