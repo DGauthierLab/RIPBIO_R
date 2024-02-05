@@ -28,7 +28,9 @@ msat1<-
 
 #Data import via Excel
 msat1 <- read_excel("amac_msat_data.xlsx", 
-                             sheet = "amac_msat_deployment_2021_p1_20")
+                             sheet = "amac_msat_deployment_2021_p1_20") |>
+  clean_names()
+
 View(msat1)
 
 msat1 <- msat1 |>
