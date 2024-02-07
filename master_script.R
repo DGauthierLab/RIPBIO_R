@@ -44,17 +44,7 @@ msat_data_wide <- msat_data |>
               values_from = genotype) |>
   column_to_rownames(var="id")
 
-
-
-
-
-
-
-
-
-
 msat_genind <- msat_data_wide |>
-   |>
   df2genind(sep = '_', ploidy = 2,  ncode = 3, NA.char = NA)
 
 sum_msat_genind <- (summary(msat_genind))
