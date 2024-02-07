@@ -35,5 +35,29 @@ View(msat1)
 
 msat1 <- msat1 |>
   filter(status == "PS") |>
-  select(id, marker_name, allele_1, allele_2)
+  select(id, marker_name, allele_1, allele_2) |>
+  unite("genotype", allele_1, allele_2)
+
+#pivot wider
+msat_data_wide <- msat_data |>
+  pivot_wider(names_from = marker_name, 
+              values_from = genotype) |>
+  column_to_rownames(var="id")
+
+
+
+
+
+
+
+
+
+
+msat_genind <- msat_data_wide |>
+   |>
+  df2genind(sep = '_', ploidy = 2,  ncode = 3, NA.char = NA)
+
+sum_msat_genind <- (summary(msat_genind))
+sum_msat_genind
+
 
