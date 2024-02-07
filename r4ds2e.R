@@ -402,11 +402,11 @@ daily_flights <- daily |>
 
 #table 1 is tidy
 
-table1 |>
+table2 |>
   mutate(rate = cases / population * 10000)
 
 table1 |> 
-  group_by(year) |> 
+  group_by(country) |> 
   summarize(total_cases = sum(cases))
 
 ggplot(table1, aes(x = year, y = cases)) +
