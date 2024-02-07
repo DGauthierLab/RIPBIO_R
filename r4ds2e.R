@@ -396,3 +396,89 @@ daily
 
 daily_flights <- daily |> 
   summarize(n = n())
+
+
+## Section 5: Data tidying and pivoting
+
+#table 1 is tidy
+
+table1 |>
+  mutate(rate = cases / population * 10000)
+
+table1 |> 
+  group_by(year) |> 
+  summarize(total_cases = sum(cases))
+
+ggplot(table1, aes(x = year, y = cases)) +
+  geom_line(aes(group = country), color = "grey50") +
+  geom_point(aes(color = country, shape = country)) +
+  scale_x_continuous(breaks = c(1999, 2000)) 
+
+#table 2 has variables as values
+
+table2
+
+#what's untidy about table 3?
+
+table3 
+
+#lengthening data 
+
+df <- tribble(
+  ~id,  ~bp1, ~bp2,
+  "A",  100,  120,
+  "B",  140,  115,
+  "C",  120,  125
+)
+
+df |> 
+  pivot_longer(
+    cols = bp1:bp2,
+    names_to = "measurement",
+    values_to = "value"
+  )
+
+#making data wider
+
+df <- tribble(
+  ~id, ~measurement, ~value,
+  "A",        "bp1",    100,
+  "B",        "bp1",    140,
+  "B",        "bp2",    115, 
+  "A",        "bp2",    120,
+  "A",        "bp3",    105
+)
+
+df |> 
+  pivot_wider(
+    names_from = measurement,
+    values_from = value
+  )
+
+##Regular Expressions (Section 15)
+
+#literal matches
+str_view(fruit, "berry")
+
+#any character (.)
+str_view(fruit, "a...e")
+
+#quantifiers (?, +, *)
+str_view(c("a", "ab", "abb"), "ab?")
+
+str_view(c("a", "ab", "abb"), "ab+")
+
+str_view(c("a", "ab", "abb"), "ab*")
+
+#character classes ([])
+
+str_view(words, "[aeiou]x[aeiou]")
+
+#negated character class ([^])
+
+str_view(words, "[^aeiou]y[^aeiou]")
+
+#alternation (|)
+str_view(fruit, "apple|melon|nut")
+str_view(fruit, "aa|ee|ii|oo|uu")
+
