@@ -39,7 +39,7 @@ msat1 <- msat1 |>
   unite("genotype", allele_1, allele_2)
 
 #pivot wider
-msat_data_wide <- msat_data |>
+msat_data_wide <- msat1 |>
   pivot_wider(names_from = marker_name, 
               values_from = genotype) |>
   column_to_rownames(var="id")
