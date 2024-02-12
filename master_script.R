@@ -60,6 +60,29 @@ afreq <- makefreq(msat_genpop)
 
 #rearrange frequency table to three columns (locus, allele, frequency)
 
+afreq <- makefreq(msat_genpop) |>
+  as_tibble() |>
+  pivot_longer(
+    cols = Am103.397:Am20.210, 
+    names_to = c("locus", "allele"), 
+    names_pattern = "([Aa]m[0-9]{2,3})\\.([0-9]{3})",
+    values_to = "frequency"
+  )
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  as_tibble() %>%
+  pivot_longer(cols = ,
+               names_to = c("locus","allele"),
+               names_pattern = "([Aa]m[0-9]{2,3})\\.([0-9]{3})") %>%
+  rename(freq = value)
 
+afreq
 
 
