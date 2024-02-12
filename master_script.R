@@ -50,4 +50,16 @@ msat_genind <- msat_data_wide |>
 sum_msat_genind <- (summary(msat_genind))
 sum_msat_genind
 
+#make genpop object
+
+msat_genpop <- genind2genpop(msat_genind)
+
+#make a frequency table using makefreq from adegenet
+
+afreq <- makefreq(msat_genpop)
+
+#rearrange frequency table to three columns (locus, allele, frequency)
+
+
+
 
