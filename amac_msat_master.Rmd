@@ -1,0 +1,122 @@
+---
+title: "amac_msat_master"
+output: html_document
+date: "2024-02-21"
+---
+
+```{r setup, include=FALSE}
+
+#package loadings
+if (!require('adegenet')) install.packages('adegenet')
+if (!require('pegas')) install.packages('pegas')
+if (!require('janitor')) install.packages('janitor')
+if (!require('tidytext')) install.packages("tidytext")
+
+##library loadings
+library('adegenet')
+library('ggplot2')
+library('dplyr')
+library('tidyverse')
+library('readxl')
+library('janitor')
+library('pegas')
+library('tidyverse')
+library('tidyr')
+library('tidytext')
+library('googlesheets4')
+
+#set working directory to present directory
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r data import (google)}
+#Data import via Google Sheets
+msat1<-
+  read_sheet("https://docs.google.com/spreadsheets/d/1legFKoXPIPQsNmkzSJ16VjrEzXqmFb2xVauIH8cZHYM/edit?usp=sharing", sheet = "amac_msat_deployment_2021_p1_20_91_112_103", col_names = TRUE) |>
+  clean_names()
+
+View(msat1)
+```
+```{r data import (excel)}
+#Data import via Excel
+msat1 <- read_excel("amac_msat_data.xlsx", 
+                             sheet = "amac_msat_deployment_2021_p1_20") |>
+  clean_names()
+
+View(msat1)
+```
+```{r data wrangling}
+#extract metadata from tick IDs
+msat_data <- msat1 |>
+  mutate(
+    #append .0 specimen number when not present.  
+    #This allows anchoring the regex at the end rather than the beginning, so missing transect codes don't break things.
+    id = case_when(
+      str_detect(id, ".*\\.[0-9]$") ~ id,
+      str_detect(id, "([^\\.])") ~ str_replace(id, "(.*)", "\\1\\.0")),
+    #Sex (3=female, 4= male) from third-to last digit in front of .x
+    sex = case_when(
+      str_detect(id, ".*3[0-9]{2}\\.") == "TRUE" ~ "F",
+      str_detect(id, ".*4[0-9]{2}\\.") == "TRUE" ~ "M",
+      TRUE ~ NA_character_),
+    #site (capital letters at front of id code)
+    site = str_extract(id, "^[A-Z]*")
+    #how do we do year?
+    #how do we do week?
+)
+
+#united genotype column for genind
+msat1 <- msat1 |>
+  filter(status == "PS") |>
+  select(id, marker_name, allele_1, allele_2) |>
+  unite("genotype", allele_1, allele_2)
+
+#pivot wider
+msat_data_wide <- msat1 |>
+  pivot_wider(names_from = marker_name, 
+              values_from = genotype) |>
+  column_to_rownames(var="id")
+```
+```{r make genind, genpop objects}
+msat_genind <- msat_data_wide |>
+  df2genind(sep = '_', ploidy = 2,  ncode = 3, NA.char = NA)
+
+#make genpop object
+
+msat_genpop <- genind2genpop(msat_genind)
+```
+```{r allelic frequencies}
+
+#make a frequency table using makefreq from adegenet
+
+afreq <- makefreq(msat_genpop)
+
+#rearrange frequency table to three columns (locus, allele, frequency)
+
+afreq <- makefreq(msat_genpop) |>
+  as_tibble() |>
+  pivot_longer(
+    cols = everything(), 
+    names_to = c("locus", "allele"), 
+    names_pattern = "([Aa]m[0-9]{2,3})\\.([0-9]{3})",
+    values_to = "frequency"
+  )
+```
+```{r adegenet statistics}
+#polymorphic loci
+
+sum_msat_genind <- (summary(msat_genind))
+sum_msat_genind
+
+poly<-isPoly(msat_genind, by=c("locus"))
+poly
+
+## observed vs expected heterozygosity by locus
+locus <- levels(msat_genind@loc.fac)
+observed.hetero<- sum_msat_genind$Hobs
+expected.hetero<- sum_msat_genind$Hexp 
+
+#Test of HWE from adegenet
+hw.test(msat_genind)
+```
