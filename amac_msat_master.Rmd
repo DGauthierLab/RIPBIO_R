@@ -118,5 +118,5 @@ observed.hetero<- sum_msat_genind$Hobs
 expected.hetero<- sum_msat_genind$Hexp 
 
 #Test of HWE from adegenet
-hw.test(msat_genind)
+hw.test(msat_genind, B=1000)
 ```
