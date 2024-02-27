@@ -117,6 +117,8 @@ locus <- levels(msat_genind@loc.fac)
 observed.hetero<- sum_msat_genind$Hobs
 expected.hetero<- sum_msat_genind$Hexp 
 
+df <- data.frame(observed.hetero,expected.hetero)
+
 #Test of HWE from adegenet
 hw.test(msat_genind, B=1000)
 ```
