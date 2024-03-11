@@ -55,9 +55,6 @@ msat3<-
 View(msat3)
 
 
-##PROBLEM:  We need to import the other two data tabs from the Google sheet as data objects msat2 and msat3.  How do we do this?
-
-
 ```
 ```{r data import (excel)}
 #Data import via Excel
