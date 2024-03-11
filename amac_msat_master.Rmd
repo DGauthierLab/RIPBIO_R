@@ -42,6 +42,19 @@ msat1<-
 
 View(msat1)
 
+msat2<-
+  read_sheet("https://docs.google.com/spreadsheets/d/1legFKoXPIPQsNmkzSJ16VjrEzXqmFb2xVauIH8cZHYM/edit?usp=sharing", sheet = "amac_msat_deployment_2021_p1_56_19_74_95", col_names = TRUE) |>
+  clean_names()
+
+View(msat2)
+
+msat3<-
+  read_sheet("https://docs.google.com/spreadsheets/d/1legFKoXPIPQsNmkzSJ16VjrEzXqmFb2xVauIH8cZHYM/edit?usp=sharing", sheet = "amac_msat_deployment_2021_p1_53_119_114_05", col_names = TRUE) |>
+  clean_names()
+
+View(msat3)
+
+
 ##PROBLEM:  We need to import the other two data tabs from the Google sheet as data objects msat2 and msat3.  How do we do this?
 
 
