@@ -11,6 +11,8 @@ if (!require('adegenet')) install.packages('adegenet')
 if (!require('pegas')) install.packages('pegas')
 if (!require('janitor')) install.packages('janitor')
 if (!require('tidytext')) install.packages("tidytext")
+if (!require('hierfstat')) install.packages("hierfstat")
+if (!require('pegas')) install.packages("pegas")
 
 ##library loadings
 library('adegenet')
@@ -24,6 +26,8 @@ library('tidyverse')
 library('tidyr')
 library('tidytext')
 library('googlesheets4')
+library('hierfstat')
+library('pegas')
 
 #set working directory to present directory
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -37,6 +41,10 @@ msat1<-
   clean_names()
 
 View(msat1)
+
+##PROBLEM:  We need to import the other two data tabs from the Google sheet as data objects msat2 and msat3.  How do we do this?
+
+
 ```
 ```{r data import (excel)}
 #Data import via Excel
@@ -46,6 +54,12 @@ msat1 <- read_excel("amac_msat_data.xlsx",
 
 View(msat1)
 ```
+```{r data merge}
+
+##PROBLEM: How do I merge msat1, msat2 and msat3 into one data object?  What should it look like?  Name it "msat_data"
+
+```
+
 ```{r data wrangling}
 #extract metadata from tick IDs
 msat_data <- msat1 |>
@@ -55,32 +69,53 @@ msat_data <- msat1 |>
     id = case_when(
       str_detect(id, ".*\\.[0-9]$") ~ id,
       str_detect(id, "([^\\.])") ~ str_replace(id, "(.*)", "\\1\\.0")),
-    #Sex (3=female, 4= male) from third-to last digit in front of .x
+    #new sex column
     sex = case_when(
       str_detect(id, ".*3[0-9]{2}\\.") == "TRUE" ~ "F",
       str_detect(id, ".*4[0-9]{2}\\.") == "TRUE" ~ "M",
       TRUE ~ NA_character_),
-    #site (capital letters at front of id code)
-    site = str_extract(id, "^[A-Z]*")
-    #how do we do year?
-    #how do we do week?
-)
+    #new species column
+    species = case_when(
+      str_detect(id, ".*4[0-9]{3}\\.") == "TRUE" ~ "Am", 
+      str_detect(id, ".*2[0-9]{3}\\.") == "TRUE" ~ "Aa",
+      TRUE ~ NA_character_),
+    #new site column
+    site = case_when(
+      str_detect(id, "SS") == "TRUE" ~ str_extract(id, "SS[0-9]{2}"),
+      str_detect(id, "SS") == "FALSE" ~ str_extract(id, "^[A-Z]{2,4}"),
+      TRUE ~ NA_character_),
+    #new transect column
+    transect = case_when(
+      str_detect(id, "SS") == "TRUE" ~ NA_character_,
+      str_detect(id, "SS") == "FALSE" ~ str_extract(id, "(?<=^[A-Z]{1,4})[0-9]"),
+      TRUE ~ NA_character_),
+    #new week column
+    week = case_when(
+      str_detect(id, "^[A-Z]{2,4}[0-9]{9}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{1})[0-9]{2}"),
+      str_detect(id, "^[A-Z]{2,4}[0-9]{8}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4})[0-9]{2}"),
+      TRUE ~ NA_character_),
+    #new year column
+    year = case_when(
+      str_detect(id, "^[A-Z]{2,4}[0-9]{9}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{3})[0-9]{2}"),
+      str_detect(id, "^[A-Z]{2,4}[0-9]{8}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{2})[0-9]{2}"),
+      TRUE ~ NA_character_)
+  )
 
 #united genotype column for genind
-msat1 <- msat1 |>
+msat_data_genind <- msat_data |>
   filter(status == "PS") |>
-  select(id, marker_name, allele_1, allele_2) |>
+  select(id, site, marker_name, allele_1, allele_2) |>
   unite("genotype", allele_1, allele_2)
 
 #pivot wider
-msat_data_wide <- msat1 |>
+msat_data_wide_genind <- msat_data_genind |>
   pivot_wider(names_from = marker_name, 
               values_from = genotype) |>
   column_to_rownames(var="id")
 ```
 ```{r make genind, genpop objects}
-msat_genind <- msat_data_wide |>
-  df2genind(sep = '_', ploidy = 2,  ncode = 3, NA.char = NA)
+msat_genind <- 
+  df2genind(X = msat_data_wide_genind[ ,-1], sep = '_', ploidy = 2,  pop = msat_data_wide_genind[ ,1], ncode = 3, NA.char = NA)
 
 #make genpop object
 
@@ -102,6 +137,15 @@ afreq <- makefreq(msat_genpop) |>
     names_pattern = "([Aa]m[0-9]{2,3})\\.([0-9]{3})",
     values_to = "frequency"
   )
+
+#make frequency facetplot
+freq_chart <- ggplot(afreq, aes(x = reorder_within(allele, as.numeric(allele),locus), y = frequency)) +      
+  geom_bar(position=position_dodge(), stat="identity") + 
+  scale_x_reordered() +
+  facet_grid(~ locus, scales="free_x")
+freq_chart
+
+
 ```
 ```{r adegenet statistics}
 #polymorphic loci
@@ -117,8 +161,48 @@ locus <- levels(msat_genind@loc.fac)
 observed.hetero<- sum_msat_genind$Hobs
 expected.hetero<- sum_msat_genind$Hexp 
 
-df <- data.frame(observed.hetero,expected.hetero)
+##NEW
+#plot expected vs. observed heterozygosity
+my_table <- data.frame(locus = locus, observed.hetero = observed.hetero, expected.hetero = expected.hetero) |>
+  mutate (deltaH = expected.hetero-observed.hetero)
+
+table_long <- pivot_longer(my_table, c(expected.hetero,observed.hetero), names_to = "het")
+
+het_plot <- ggplot(table_long, aes(x = locus)) +
+  geom_bar(aes(y = value, fill=het), stat = "identity", position = position_dodge()) +
+  theme(axis.text.x = element_text(size = 6),
+panel.background = element_blank())
+
+plot(het_plot)
+
+delta_plot <- ggplot(table_long, aes(x = locus)) +
+  geom_bar(aes(y = deltaH), stat = "identity", position = position_dodge()) +
+  theme(axis.text.x = element_text(size = 6),
+panel.background = element_blank())
+  
+plot(delta_plot)
 
 #Test of HWE from adegenet
 hw.test(msat_genind, B=1000)
+```
+```{r calculate F statistics}
+#calculates basic population F statistics
+#Fst is population/total
+#Fis is individual/population
+#Fit is inbreeding statistic
+
+wc(msat_genind)
+
+ftab <- Fst(as.loci(msat_genind))
+ftab # per-locus F-statistics
+
+colMeans(ftab) #global F-statistics
+
+#95% confidence intervals
+msat_hf <- genind2hierfstat(msat_genind)
+boot.vc(msat_hf[1], msat_hf[-1])$ci
+
+matFst <- genet.dist(msat_genind[1:50, ], method = "Nei87")
+matFst
+
 ```
