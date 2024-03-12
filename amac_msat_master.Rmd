@@ -71,7 +71,6 @@ View(msat1)
 msat_data <- rbind(msat1, msat2, msat3)
 
 ```
-
 ```{r data wrangling}
 #extract metadata from tick IDs
 msat_data <- msat_data |>
@@ -127,8 +126,23 @@ msat_data_wide_genind <- msat_data_genind |>
   column_to_rownames(var="id")
 ```
 ```{r make genind, genpop objects}
+
+#examine sample sizes
+samplesize <- msat_data_wide_genind |>
+  group_by(site) |>
+  summarize(
+    n=n()
+  )
+
+#select only sites with >5 ticks
+msat_data_wide_genind_5tick <- msat_data_wide_genind |>
+  filter(site %in% c("RR","CV","BISI", "SH"))
+
 msat_genind <- 
-  df2genind(X = msat_data_wide_genind[ ,-1], sep = '_', ploidy = 2,  pop = msat_data_wide_genind[ ,1], ncode = 3, NA.char = NA)
+ df2genind(X = msat_data_wide_genind_5tick[ ,-1], sep = '_', ploidy = 2,  pop = msat_data_wide_genind_5tick[ ,1], ncode = 3, NA.char = NA)
+
+sum_msat_genind <- (summary(msat_genind))
+sum_msat_genind
 
 #make genpop object
 
@@ -138,24 +152,20 @@ msat_genpop <- genind2genpop(msat_genind)
 
 #make a frequency table using makefreq from adegenet
 
-afreq <- makefreq(msat_genpop)
-
-#rearrange frequency table to three columns (locus, allele, frequency)
-
-afreq <- makefreq(msat_genpop) |>
-  as_tibble() |>
+afreq <- as.data.frame(makefreq(msat_genpop)) |>
+  rownames_to_column(var = "site") |>
   pivot_longer(
-    cols = everything(), 
+    cols = -c(site), 
     names_to = c("locus", "allele"), 
     names_pattern = "([Aa]m[0-9]{2,3})\\.([0-9]{3})",
     values_to = "frequency"
-  )
+  ) |> drop_na()
 
 #make frequency facetplot
-freq_chart <- ggplot(afreq, aes(x = reorder_within(allele, as.numeric(allele),locus), y = frequency)) +      
+freq_chart <- ggplot(afreq, aes(x = reorder_within(allele, as.numeric(allele),locus), y = frequency)) +      #geom_point()+
   geom_bar(position=position_dodge(), stat="identity") + 
   scale_x_reordered() +
-  facet_grid(~ locus, scales="free_x")
+  facet_grid(site ~ locus, scales="free_x")
 freq_chart
 
 
@@ -206,16 +216,52 @@ hw.test(msat_genind, B=1000)
 
 wc(msat_genind)
 
+library(pegas)
 ftab <- Fst(as.loci(msat_genind))
 ftab # per-locus F-statistics
 
-colMeans(ftab) #global F-statistics
-
-#95% confidence intervals
 msat_hf <- genind2hierfstat(msat_genind)
 boot.vc(msat_hf[1], msat_hf[-1])$ci
 
 matFst <- genet.dist(msat_genind[1:50, ], method = "Nei87")
 matFst
+
+```
+```{r inbreeding}
+Fsamp<-inbreeding(msat_genind, res.type = c("sample"), N=200, M = 20000)
+
+Fdens <- inbreeding(msat_genind, res.type="function")
+
+Fmean=sapply(Fsamp, mean)
+hist(Fmean, col="orange", xlab="mean value of F",
+main="Distribution of mean F across individuals")
+
+Fest <- inbreeding(msat_genind, res.type = "estimate")
+
+mostInbred <- which.max(Fest)
+leastInbred <- which.min(Fest)
+
+#most inbred individual
+plot(Fdens[[mostInbred]], ylab = "Density", xlab = "F",
+     main = paste("Probability density of F values\nfor", names(mostInbred)))
+abline(v = Fest[mostInbred], col = "red", lty = 2)
+legend("topright", legend = "MLE", col = "red", lty = 2)
+
+#least inbred individual
+plot(Fdens[[leastInbred]], ylab = "Density", xlab = "F",
+     main = paste("Probability density of F values\nfor", names(mostInbred)))
+abline(v = Fest[leastInbred], col = "red", lty = 2)
+legend("topright", legend = "MLE", col = "red", lty = 2)
+
+#any individual
+plot(Fdens[[5]], ylab = "Density", xlab = "F",
+     main = paste("Probability density of F values\nfor", names(mostInbred)))
+abline(v = Fest[5], col = "red", lty = 2)
+legend("topright", legend = "MLE", col = "red", lty = 2)
+
+## plot of all inbreeding coefficients
+plot(Fest, ylab = "F", col = "blue",
+     main = "MLE estimates of inbreeding coefficient")
+
 
 ```
