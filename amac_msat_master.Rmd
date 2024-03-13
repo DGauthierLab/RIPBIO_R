@@ -13,6 +13,8 @@ if (!require('janitor')) install.packages('janitor')
 if (!require('tidytext')) install.packages("tidytext")
 if (!require('hierfstat')) install.packages("hierfstat")
 if (!require('pegas')) install.packages("pegas")
+library(devtools)
+install_github("mkanai/deFinetti")
 
 ##library loadings
 library('adegenet')
@@ -65,8 +67,6 @@ msat1 <- read_excel("amac_msat_data.xlsx",
 View(msat1)
 ```
 ```{r data merge}
-
-##PROBLEM: How do I merge msat1, msat2 and msat3 into one data object?  What should it look like?  Name it "msat_data"
 
 msat_data <- rbind(msat1, msat2, msat3)
 
@@ -240,6 +240,7 @@ Fest <- inbreeding(msat_genind, res.type = "estimate")
 
 mostInbred <- which.max(Fest)
 leastInbred <- which.min(Fest)
+anyInbred <- Fest[["CV25214301.2"]]
 
 #most inbred individual
 plot(Fdens[[mostInbred]], ylab = "Density", xlab = "F",
@@ -249,13 +250,13 @@ legend("topright", legend = "MLE", col = "red", lty = 2)
 
 #least inbred individual
 plot(Fdens[[leastInbred]], ylab = "Density", xlab = "F",
-     main = paste("Probability density of F values\nfor", names(mostInbred)))
+     main = paste("Probability density of F values\nfor", names(leastInbred)))
 abline(v = Fest[leastInbred], col = "red", lty = 2)
 legend("topright", legend = "MLE", col = "red", lty = 2)
 
 #any individual
-plot(Fdens[[5]], ylab = "Density", xlab = "F",
-     main = paste("Probability density of F values\nfor", names(mostInbred)))
+plot(Fdens[["CV25214301.2"]], ylab = "Density", xlab = "F",
+     main = paste("Probability density of F values\nfor", "CV25214301.2"))
 abline(v = Fest[5], col = "red", lty = 2)
 legend("topright", legend = "MLE", col = "red", lty = 2)
 
@@ -264,4 +265,9 @@ plot(Fest, ylab = "F", col = "blue",
      main = "MLE estimates of inbreeding coefficient")
 
 
+```
+```{r deFinetti Diagram}
+library(deFinetti)
+data(GenotypeFreq)
+deFinetti.plot(GenotypeFreq, with_F_color = TRUE, without_markers = FALSE, markerlab = rownames(GenotypeFreq))
 ```
