@@ -61,8 +61,16 @@ View(msat3)
 ```
 ```{r data import (excel)}
 #Data import via Excel
-msat1 <- read_excel("amac_msat_data.xlsx", 
+msat1 <- read_excel("amac_msat_data_0311.xlsx", 
                              sheet = "amac_msat_deployment_2021_p1_20") |>
+  clean_names()
+
+msat2 <- read_excel("amac_msat_data_0311.xlsx", 
+                             sheet = "amac_msat_deployment_2021_p1_56") |>
+  clean_names()
+
+msat3 <- read_excel("amac_msat_data_0311.xlsx", 
+                             sheet = "amac_msat_deployment_2021_p1_53") |>
   clean_names()
 
 View(msat1)
