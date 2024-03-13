@@ -13,6 +13,7 @@ if (!require('janitor')) install.packages('janitor')
 if (!require('tidytext')) install.packages("tidytext")
 if (!require('hierfstat')) install.packages("hierfstat")
 if (!require('pegas')) install.packages("pegas")
+if (!require('devtools')) install.packages('devtools')
 library(devtools)
 install_github("mkanai/deFinetti")
 
