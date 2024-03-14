@@ -16,6 +16,12 @@ if (!require('pegas')) install.packages("pegas")
 if (!require('devtools')) install.packages('devtools')
 library(devtools)
 install_github("mkanai/deFinetti")
+install.packages("StAMPP")
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("SNPRelate")
+install.packages('dartR')
 
 ##library loadings
 library('adegenet')
@@ -31,6 +37,8 @@ library('tidytext')
 library('googlesheets4')
 library('hierfstat')
 library('pegas')
+library('StAMPP')
+library('dartR')
 
 #set working directory to present directory
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -232,8 +240,14 @@ ftab # per-locus F-statistics
 msat_hf <- genind2hierfstat(msat_genind)
 boot.vc(msat_hf[1], msat_hf[-1])$ci
 
-matFst <- genet.dist(msat_genind[1:50, ], method = "Nei87")
+matFst <- genet.dist(msat_genind[1:50, ], method = "WC84")
 matFst
+
+msat_genlight <- gi2gl(msat_genind, parallel = FALSE, verbose = NULL)
+
+# Calculate pairwise Fst values between each population
+pairwise.fst.p <- stamppFst(msat_genlight, 100, 95, 1)
+View(pairwise.fst.p)
 
 ```
 ```{r inbreeding}
