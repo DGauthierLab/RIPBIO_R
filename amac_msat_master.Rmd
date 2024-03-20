@@ -174,6 +174,7 @@ afreq <- as.data.frame(makefreq(msat_genpop)) |>
 freq_chart <- ggplot(afreq, aes(x = reorder_within(allele, as.numeric(allele),locus), y = frequency)) +      #geom_point()+
   geom_bar(position=position_dodge(), stat="identity") + 
   scale_x_reordered() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   facet_grid(site ~ locus, scales="free_x")
 freq_chart
 
@@ -229,6 +230,7 @@ library(pegas)
 ftab <- Fst(as.loci(msat_genind))
 ftab # per-locus F-statistics
 
+#95% confidence intervals for global statistics
 msat_hf <- genind2hierfstat(msat_genind)
 boot.vc(msat_hf[1], msat_hf[-1])$ci
 
