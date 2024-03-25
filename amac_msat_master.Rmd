@@ -282,3 +282,10 @@ library(deFinetti)
 data(GenotypeFreq)
 deFinetti.plot(GenotypeFreq, with_F_color = TRUE, without_markers = FALSE, markerlab = rownames(GenotypeFreq))
 ```
+
+```{r distance correlation}
+names <- c("CV","RR","BISI","SB")
+gdist <- c(1,2,3,4)
+kmdist <- c(10,20,30,40)
+corr_tbl <- tibble(names,gdist,kmdist)
+```
