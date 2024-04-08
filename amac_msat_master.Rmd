@@ -86,11 +86,11 @@ View(msat1)
 ```{r data merge}
 
 msat_data <- rbind(msat1, msat2, msat3)
-save(msat_data, file ="msat_data.Rdata")
+save(msat_data, file ="data/msat_data.Rdata")
 
 ```
 ```{r data wrangling}
-load("msat_data.Rdata")
+load("data/msat_data.Rdata")
 #extract metadata from tick IDs
 msat_data <- msat_data |>
   mutate(
