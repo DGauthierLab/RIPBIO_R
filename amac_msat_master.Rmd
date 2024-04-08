@@ -237,6 +237,17 @@ boot.vc(msat_hf[1], msat_hf[-1])$ci
 matFst <- genet.dist(msat_genind[1:50, ], method = "Nei87")
 matFst
 
+matFst <- genet.dist(msat_genind[1:50, ], method = "WC84")
+matFst
+
+msat_genlight <- gi2gl(msat_genind, parallel = FALSE, verbose = NULL)
+
+# Calculate pairwise Fst values between each population
+pairwise.fst.p <- stamppFst(msat_genlight, 100, 95, 1)
+View(pairwise.fst.p)
+
+pairwise.fst.p[["Pvalues"]]
+
 ```
 ```{r inbreeding}
 Fsamp<-inbreeding(msat_genind, res.type = c("sample"), N=200, M = 20000)
