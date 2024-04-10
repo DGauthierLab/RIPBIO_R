@@ -15,13 +15,13 @@ if (!require('hierfstat')) install.packages("hierfstat")
 if (!require('pegas')) install.packages("pegas")
 if (!require('devtools')) install.packages('devtools')
 library(devtools)
-install_github("mkanai/deFinetti")
-install.packages("StAMPP")
+#install_github("mkanai/deFinetti")
+#install.packages("StAMPP")
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
-BiocManager::install("SNPRelate")
-install.packages('dartR')
+#BiocManager::install("SNPRelate")
+#install.packages('dartR')
 
 ##library loadings
 library('adegenet')
