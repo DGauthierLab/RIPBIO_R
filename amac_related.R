@@ -57,6 +57,9 @@ load("data/simrel.Rdata")
 load("data/compest.Rdata")
 
 #Plot relatedness data
+
+
+
 #basic scatterplot
 
 wang_rel <- ggplot(data = rel$relatedness, aes(x=group, y=wang)) +
