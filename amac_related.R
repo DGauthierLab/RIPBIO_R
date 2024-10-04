@@ -56,8 +56,19 @@ load("data/rel.Rdata")
 load("data/simrel.Rdata")
 load("data/compest.Rdata")
 
-#Plot relatedness data
-
+#simulation data
+#Simulations under allele frequencies calculated above
+#Prints PDFs
+relvalues_trioml <-simrel [, 5]
+relvalues_wang <- simrel [, 6]
+label1 <- rep ("PO", 100)
+label2 <- rep (" Full ", 100)
+label3 <- rep (" Half ", 100)
+label4 <- rep (" Unrelated ", 100)
+labels <- c( label1 , label2 , label3 , label4 )
+pdf(file = "images/Wang_sim.pdf")
+plot (as.factor(labels), relvalues_wang , ylab ="Wang_value", xlab ="Relatedness")
+dev.off()
 
 
 #basic scatterplot

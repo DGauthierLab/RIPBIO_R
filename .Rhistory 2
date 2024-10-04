@@ -1,0 +1,512 @@
+#new week column
+week = case_when(
+str_detect(id, "^[A-Z]{2,4}[0-9]{9}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{1})[0-9]{2}"),
+str_detect(id, "^[A-Z]{2,4}[0-9]{8}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4})[0-9]{2}"),
+TRUE ~ NA_character_),
+#new year column
+year = case_when(
+str_detect(id, "^[A-Z]{2,4}[0-9]{9}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{3})[0-9]{2}"),
+str_detect(id, "^[A-Z]{2,4}[0-9]{8}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{2})[0-9]{2}"),
+TRUE ~ NA_character_)
+)
+#united genotype column for genind
+msat_data_genind <- msat_data |>
+filter(status == "PS") |>
+filter(marker_name != "Am103" & marker_name != "Am20" ) |>
+select(id, site, marker_name, allele_1, allele_2) |>
+unite("genotype", allele_1, allele_2)
+#pivot wider
+msat_data_wide_genind <- msat_data_genind |>
+pivot_wider(names_from = marker_name,
+values_from = genotype) |>
+column_to_rownames(var="id")
+#Data import via Google Sheets
+msat1<-
+read_sheet("https://docs.google.com/spreadsheets/d/1legFKoXPIPQsNmkzSJ16VjrEzXqmFb2xVauIH8cZHYM/edit?usp=sharing", sheet = "amac_msat_deployment_2021_p1_20_91_112_103", col_names = TRUE) |>
+clean_names()
+View(msat1)
+msat2<-
+read_sheet("https://docs.google.com/spreadsheets/d/1legFKoXPIPQsNmkzSJ16VjrEzXqmFb2xVauIH8cZHYM/edit?usp=sharing", sheet = "amac_msat_deployment_2021_p1_56_19_74_95", col_names = TRUE) |>
+clean_names()
+View(msat2)
+msat3<-
+read_sheet("https://docs.google.com/spreadsheets/d/1legFKoXPIPQsNmkzSJ16VjrEzXqmFb2xVauIH8cZHYM/edit?usp=sharing", sheet = "amac_msat_deployment_2021_p1_53_119_114_05", col_names = TRUE) |>
+clean_names()
+View(msat3)
+msat_data <- rbind(msat1, msat2, msat3)
+save(msat_data, file ="msat_data.Rdata")
+load("msat_data.Rdata")
+#extract metadata from tick IDs
+msat_data <- msat_data |>
+mutate(
+#append .0 specimen number when not present.
+#This allows anchoring the regex at the end rather than the beginning, so missing transect codes don't break things.
+id = case_when(
+str_detect(id, ".*\\.[0-9]$") ~ id,
+str_detect(id, "([^\\.])") ~ str_replace(id, "(.*)", "\\1\\.0")),
+#new sex column
+sex = case_when(
+str_detect(id, ".*3[0-9]{2}\\.") == "TRUE" ~ "F",
+str_detect(id, ".*4[0-9]{2}\\.") == "TRUE" ~ "M",
+TRUE ~ NA_character_),
+#new species column
+species = case_when(
+str_detect(id, ".*4[0-9]{3}\\.") == "TRUE" ~ "Am",
+str_detect(id, ".*2[0-9]{3}\\.") == "TRUE" ~ "Aa",
+TRUE ~ NA_character_),
+#new site column
+site = case_when(
+str_detect(id, "SS") == "TRUE" ~ str_extract(id, "SS[0-9]{2}"),
+str_detect(id, "SS") == "FALSE" ~ str_extract(id, "^[A-Z]{2,4}"),
+TRUE ~ NA_character_),
+#new transect column
+transect = case_when(
+str_detect(id, "SS") == "TRUE" ~ NA_character_,
+str_detect(id, "SS") == "FALSE" ~ str_extract(id, "(?<=^[A-Z]{1,4})[0-9]"),
+TRUE ~ NA_character_),
+#new week column
+week = case_when(
+str_detect(id, "^[A-Z]{2,4}[0-9]{9}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{1})[0-9]{2}"),
+str_detect(id, "^[A-Z]{2,4}[0-9]{8}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4})[0-9]{2}"),
+TRUE ~ NA_character_),
+#new year column
+year = case_when(
+str_detect(id, "^[A-Z]{2,4}[0-9]{9}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{3})[0-9]{2}"),
+str_detect(id, "^[A-Z]{2,4}[0-9]{8}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{2})[0-9]{2}"),
+TRUE ~ NA_character_)
+)
+#united genotype column for genind
+msat_data_genind <- msat_data |>
+filter(status == "PS") |>
+filter(marker_name != "Am103" & marker_name != "Am20" ) |>
+select(id, site, marker_name, allele_1, allele_2) |>
+unite("genotype", allele_1, allele_2)
+#pivot wider
+msat_data_wide_genind <- msat_data_genind |>
+pivot_wider(names_from = marker_name,
+values_from = genotype) |>
+column_to_rownames(var="id")
+#calculates basic population F statistics
+#Fst is population/total
+#Fis is individual/population
+#Fit is inbreeding statistic
+wc(msat_genind)
+#polymorphic loci
+sum_msat_genind <- (summary(msat_genind))
+sum_msat_genind
+poly<-isPoly(msat_genind, by=c("locus"))
+poly
+## observed vs expected heterozygosity by locus
+locus <- levels(msat_genind@loc.fac)
+observed.hetero<- sum_msat_genind$Hobs
+expected.hetero<- sum_msat_genind$Hexp
+##NEW
+#plot expected vs. observed heterozygosity
+my_table <- data.frame(locus = locus, observed.hetero = observed.hetero, expected.hetero = expected.hetero) |>
+mutate (deltaH = expected.hetero-observed.hetero)
+table_long <- pivot_longer(my_table, c(expected.hetero,observed.hetero), names_to = "het")
+het_plot <- ggplot(table_long, aes(x = locus)) +
+geom_bar(aes(y = value, fill=het), stat = "identity", position = position_dodge()) +
+theme(axis.text.x = element_text(size = 6),
+panel.background = element_blank())
+plot(het_plot)
+delta_plot <- ggplot(table_long, aes(x = locus)) +
+geom_bar(aes(y = deltaH), stat = "identity", position = position_dodge()) +
+theme(axis.text.x = element_text(size = 6),
+panel.background = element_blank())
+plot(delta_plot)
+#Test of HWE from adegenet
+hw.test(msat_genind, B=1000)
+#examine sample sizes
+samplesize <- msat_data_wide_genind |>
+group_by(site) |>
+summarize(
+n=n()
+)
+#select only sites with >5 ticks
+msat_data_wide_genind_5tick <- msat_data_wide_genind |>
+filter(site %in% c("RR","CV","BISI", "SH"))
+msat_genind <-
+df2genind(X = msat_data_wide_genind_5tick[ ,-1], sep = '_', ploidy = 2,  pop = msat_data_wide_genind_5tick[ ,1], ncode = 3, NA.char = NA)
+sum_msat_genind <- (summary(msat_genind))
+sum_msat_genind
+#make genpop object
+msat_genpop <- genind2genpop(msat_genind)
+#make a frequency table using makefreq from adegenet
+afreq <- as.data.frame(makefreq(msat_genpop)) |>
+rownames_to_column(var = "site") |>
+pivot_longer(
+cols = -c(site),
+names_to = c("locus", "allele"),
+names_pattern = "([Aa]m[0-9]{2,3})\\.([0-9]{3})",
+values_to = "frequency"
+) |> drop_na()
+#make frequency facetplot
+freq_chart <- ggplot(afreq, aes(x = reorder_within(allele, as.numeric(allele),locus), y = frequency)) +      #geom_point()+
+geom_bar(position=position_dodge(), stat="identity") +
+scale_x_reordered() +
+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+facet_grid(site ~ locus, scales="free_x")
+freq_chart
+#polymorphic loci
+sum_msat_genind <- (summary(msat_genind))
+sum_msat_genind
+poly<-isPoly(msat_genind, by=c("locus"))
+poly
+## observed vs expected heterozygosity by locus
+locus <- levels(msat_genind@loc.fac)
+observed.hetero<- sum_msat_genind$Hobs
+expected.hetero<- sum_msat_genind$Hexp
+##NEW
+#plot expected vs. observed heterozygosity
+my_table <- data.frame(locus = locus, observed.hetero = observed.hetero, expected.hetero = expected.hetero) |>
+mutate (deltaH = expected.hetero-observed.hetero)
+table_long <- pivot_longer(my_table, c(expected.hetero,observed.hetero), names_to = "het")
+het_plot <- ggplot(table_long, aes(x = locus)) +
+geom_bar(aes(y = value, fill=het), stat = "identity", position = position_dodge()) +
+theme(axis.text.x = element_text(size = 6),
+panel.background = element_blank())
+plot(het_plot)
+delta_plot <- ggplot(table_long, aes(x = locus)) +
+geom_bar(aes(y = deltaH), stat = "identity", position = position_dodge()) +
+theme(axis.text.x = element_text(size = 6),
+panel.background = element_blank())
+plot(delta_plot)
+#Test of HWE from adegenet
+hw.test(msat_genind, B=1000)
+#calculates basic population F statistics
+#Fst is population/total
+#Fis is individual/population
+#Fit is inbreeding statistic
+wc(msat_genind)
+library(pegas)
+ftab <- Fst(as.loci(msat_genind))
+ftab # per-locus F-statistics
+#95% confidence intervals for global statistics
+msat_hf <- genind2hierfstat(msat_genind)
+boot.vc(msat_hf[1], msat_hf[-1])$ci
+matFst <- genet.dist(msat_genind[1:50, ], method = "Nei87")
+matFst
+matFst <- genet.dist(msat_genind[1:50, ], method = "WC84")
+matFst
+msat_genlight <- gi2gl(msat_genind, parallel = FALSE, verbose = NULL)
+# Calculate pairwise Fst values between each population
+pairwise.fst.p <- stamppFst(msat_genlight, 100, 95, 1)
+View(pairwise.fst.p)
+pairwise.fst.p[["Pvalues"]]
+load("msat_data.Rdata")
+#extract metadata from tick IDs
+msat_data <- msat_data |>
+mutate(
+#append .0 specimen number when not present.
+#This allows anchoring the regex at the end rather than the beginning, so missing transect codes don't break things.
+id = case_when(
+str_detect(id, ".*\\.[0-9]$") ~ id,
+str_detect(id, "([^\\.])") ~ str_replace(id, "(.*)", "\\1\\.0")),
+#new sex column
+sex = case_when(
+str_detect(id, ".*3[0-9]{2}\\.") == "TRUE" ~ "F",
+str_detect(id, ".*4[0-9]{2}\\.") == "TRUE" ~ "M",
+TRUE ~ NA_character_),
+#new species column
+species = case_when(
+str_detect(id, ".*4[0-9]{3}\\.") == "TRUE" ~ "Am",
+str_detect(id, ".*2[0-9]{3}\\.") == "TRUE" ~ "Aa",
+TRUE ~ NA_character_),
+#new site column
+site = case_when(
+str_detect(id, "SS") == "TRUE" ~ str_extract(id, "SS[0-9]{2}"),
+str_detect(id, "SS") == "FALSE" ~ str_extract(id, "^[A-Z]{2,4}"),
+TRUE ~ NA_character_),
+#new transect column
+transect = case_when(
+str_detect(id, "SS") == "TRUE" ~ NA_character_,
+str_detect(id, "SS") == "FALSE" ~ str_extract(id, "(?<=^[A-Z]{1,4})[0-9]"),
+TRUE ~ NA_character_),
+#new week column
+week = case_when(
+str_detect(id, "^[A-Z]{2,4}[0-9]{9}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{1})[0-9]{2}"),
+str_detect(id, "^[A-Z]{2,4}[0-9]{8}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4})[0-9]{2}"),
+TRUE ~ NA_character_),
+#new year column
+year = case_when(
+str_detect(id, "^[A-Z]{2,4}[0-9]{9}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{3})[0-9]{2}"),
+str_detect(id, "^[A-Z]{2,4}[0-9]{8}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{2})[0-9]{2}"),
+TRUE ~ NA_character_)
+)
+#united genotype column for genind
+msat_data_genind <- msat_data |>
+filter(status == "PS") |>
+filter(marker_name != "Am103" & marker_name != "Am20" ) |>
+select(id, site, marker_name, allele_1, allele_2) |>
+unite("genotype", allele_1, allele_2)
+#pivot wider
+msat_data_wide_genind <- msat_data_genind |>
+pivot_wider(names_from = marker_name,
+values_from = genotype) |>
+column_to_rownames(var="id")
+#package loadings
+if (!require('adegenet')) install.packages('adegenet')
+if (!require('pegas')) install.packages('pegas')
+if (!require('janitor')) install.packages('janitor')
+if (!require('tidytext')) install.packages("tidytext")
+if (!require('hierfstat')) install.packages("hierfstat")
+if (!require('pegas')) install.packages("pegas")
+if (!require('devtools')) install.packages('devtools')
+library(devtools)
+install_github("mkanai/deFinetti")
+install.packages("StAMPP")
+if (!require("BiocManager", quietly = TRUE))
+install.packages("BiocManager")
+BiocManager::install("SNPRelate")
+install.packages('dartR')
+##library loadings
+library('adegenet')
+library('ggplot2')
+library('dplyr')
+library('tidyverse')
+library('readxl')
+library('janitor')
+library('pegas')
+library('tidyverse')
+library('tidyr')
+library('tidytext')
+library('googlesheets4')
+library('hierfstat')
+library('pegas')
+library('StAMPP')
+library('dartR')
+#set working directory to present directory
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+install.packages('dartR')
+install.packages("dartR")
+BiocManager::install("SNPRelate")
+gl.install.vanilla.dartR()
+BiocManager::install("SNPRelate")
+load("msat_data.Rdata")
+#extract metadata from tick IDs
+msat_data <- msat_data |>
+mutate(
+#append .0 specimen number when not present.
+#This allows anchoring the regex at the end rather than the beginning, so missing transect codes don't break things.
+id = case_when(
+str_detect(id, ".*\\.[0-9]$") ~ id,
+str_detect(id, "([^\\.])") ~ str_replace(id, "(.*)", "\\1\\.0")),
+#new sex column
+sex = case_when(
+str_detect(id, ".*3[0-9]{2}\\.") == "TRUE" ~ "F",
+str_detect(id, ".*4[0-9]{2}\\.") == "TRUE" ~ "M",
+TRUE ~ NA_character_),
+#new species column
+species = case_when(
+str_detect(id, ".*4[0-9]{3}\\.") == "TRUE" ~ "Am",
+str_detect(id, ".*2[0-9]{3}\\.") == "TRUE" ~ "Aa",
+TRUE ~ NA_character_),
+#new site column
+site = case_when(
+str_detect(id, "SS") == "TRUE" ~ str_extract(id, "SS[0-9]{2}"),
+str_detect(id, "SS") == "FALSE" ~ str_extract(id, "^[A-Z]{2,4}"),
+TRUE ~ NA_character_),
+#new transect column
+transect = case_when(
+str_detect(id, "SS") == "TRUE" ~ NA_character_,
+str_detect(id, "SS") == "FALSE" ~ str_extract(id, "(?<=^[A-Z]{1,4})[0-9]"),
+TRUE ~ NA_character_),
+#new week column
+week = case_when(
+str_detect(id, "^[A-Z]{2,4}[0-9]{9}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{1})[0-9]{2}"),
+str_detect(id, "^[A-Z]{2,4}[0-9]{8}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4})[0-9]{2}"),
+TRUE ~ NA_character_),
+#new year column
+year = case_when(
+str_detect(id, "^[A-Z]{2,4}[0-9]{9}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{3})[0-9]{2}"),
+str_detect(id, "^[A-Z]{2,4}[0-9]{8}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{2})[0-9]{2}"),
+TRUE ~ NA_character_)
+)
+#united genotype column for genind
+msat_data_genind <- msat_data |>
+filter(status == "PS") |>
+filter(marker_name != "Am103" & marker_name != "Am20" ) |>
+select(id, site, marker_name, allele_1, allele_2) |>
+unite("genotype", allele_1, allele_2)
+#pivot wider
+msat_data_wide_genind <- msat_data_genind |>
+pivot_wider(names_from = marker_name,
+values_from = genotype) |>
+column_to_rownames(var="id")
+load("msat_data.Rdata")
+#extract metadata from tick IDs
+msat_data <- msat_data |>
+mutate(
+#append .0 specimen number when not present.
+#This allows anchoring the regex at the end rather than the beginning, so missing transect codes don't break things.
+id = case_when(
+str_detect(id, ".*\\.[0-9]$") ~ id,
+str_detect(id, "([^\\.])") ~ str_replace(id, "(.*)", "\\1\\.0")),
+#new sex column
+sex = case_when(
+str_detect(id, ".*3[0-9]{2}\\.") == "TRUE" ~ "F",
+str_detect(id, ".*4[0-9]{2}\\.") == "TRUE" ~ "M",
+TRUE ~ NA_character_),
+#new species column
+species = case_when(
+str_detect(id, ".*4[0-9]{3}\\.") == "TRUE" ~ "Am",
+str_detect(id, ".*2[0-9]{3}\\.") == "TRUE" ~ "Aa",
+TRUE ~ NA_character_),
+#new site column
+site = case_when(
+str_detect(id, "SS") == "TRUE" ~ str_extract(id, "SS[0-9]{2}"),
+str_detect(id, "SS") == "FALSE" ~ str_extract(id, "^[A-Z]{2,4}"),
+TRUE ~ NA_character_),
+#new transect column
+transect = case_when(
+str_detect(id, "SS") == "TRUE" ~ NA_character_,
+str_detect(id, "SS") == "FALSE" ~ str_extract(id, "(?<=^[A-Z]{1,4})[0-9]"),
+TRUE ~ NA_character_),
+#new week column
+week = case_when(
+str_detect(id, "^[A-Z]{2,4}[0-9]{9}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{1})[0-9]{2}"),
+str_detect(id, "^[A-Z]{2,4}[0-9]{8}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4})[0-9]{2}"),
+TRUE ~ NA_character_),
+#new year column
+year = case_when(
+str_detect(id, "^[A-Z]{2,4}[0-9]{9}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{3})[0-9]{2}"),
+str_detect(id, "^[A-Z]{2,4}[0-9]{8}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{2})[0-9]{2}"),
+TRUE ~ NA_character_)
+)
+#united genotype column for genind
+msat_data_genind <- msat_data |>
+filter(status == "PS") |>
+filter(marker_name != "Am103" & marker_name != "Am20" ) |>
+select(id, site, marker_name, allele_1, allele_2) |>
+unite("genotype", allele_1, allele_2)
+#pivot wider
+msat_data_wide_genind <- msat_data_genind |>
+pivot_wider(names_from = marker_name,
+values_from = genotype) |>
+column_to_rownames(var="id")
+View(msat_data_wide_genind)
+#Data import via Google Sheets
+msat1<-
+read_sheet("https://docs.google.com/spreadsheets/d/1legFKoXPIPQsNmkzSJ16VjrEzXqmFb2xVauIH8cZHYM/edit?usp=sharing", sheet = "amac_msat_deployment_2021_p1_20_91_112_103", col_names = TRUE) |>
+clean_names()
+View(msat1)
+msat2<-
+read_sheet("https://docs.google.com/spreadsheets/d/1legFKoXPIPQsNmkzSJ16VjrEzXqmFb2xVauIH8cZHYM/edit?usp=sharing", sheet = "amac_msat_deployment_2021_p1_56_19_74_95", col_names = TRUE) |>
+clean_names()
+View(msat2)
+msat3<-
+read_sheet("https://docs.google.com/spreadsheets/d/1legFKoXPIPQsNmkzSJ16VjrEzXqmFb2xVauIH8cZHYM/edit?usp=sharing", sheet = "amac_msat_deployment_2021_p1_53_119_114_05", col_names = TRUE) |>
+clean_names()
+View(msat3)
+msat_data <- rbind(msat1, msat2, msat3)
+save(msat_data, file ="msat_data.Rdata")
+load("~/Documents/GitHub/RIPBIO_R/msat_data.Rdata")
+msat_data <- rbind(msat1, msat2, msat3)
+save(msat_data, file ="msat_data.Rdata")
+load("~/Documents/GitHub/RIPBIO_R/msat_data.Rdata")
+msat_data <- rbind(msat1, msat2, msat3)
+save(msat_data, file ="msat_data.Rdata")
+#package loadings
+if (!require('adegenet')) install.packages('adegenet')
+if (!require('pegas')) install.packages('pegas')
+if (!require('janitor')) install.packages('janitor')
+if (!require('tidytext')) install.packages("tidytext")
+if (!require('hierfstat')) install.packages("hierfstat")
+if (!require('pegas')) install.packages("pegas")
+if (!require('devtools')) install.packages('devtools')
+library(devtools)
+install_github("mkanai/deFinetti")
+install.packages("StAMPP")
+if (!require("BiocManager", quietly = TRUE))
+install.packages("BiocManager")
+BiocManager::install("SNPRelate")
+install.packages('dartR')
+##library loadings
+library('adegenet')
+library('ggplot2')
+library('dplyr')
+library('tidyverse')
+library('readxl')
+library('janitor')
+library('pegas')
+library('tidyverse')
+library('tidyr')
+library('tidytext')
+library('googlesheets4')
+library('hierfstat')
+library('pegas')
+library('StAMPP')
+library('dartR')
+#set working directory to present directory
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+#Data import via Google Sheets
+msat1<-
+read_sheet("https://docs.google.com/spreadsheets/d/1legFKoXPIPQsNmkzSJ16VjrEzXqmFb2xVauIH8cZHYM/edit?usp=sharing", sheet = "amac_msat_deployment_2021_p1_20_91_112_103", col_names = TRUE) |>
+clean_names()
+View(msat1)
+msat2<-
+read_sheet("https://docs.google.com/spreadsheets/d/1legFKoXPIPQsNmkzSJ16VjrEzXqmFb2xVauIH8cZHYM/edit?usp=sharing", sheet = "amac_msat_deployment_2021_p1_56_19_74_95", col_names = TRUE) |>
+clean_names()
+View(msat2)
+msat3<-
+read_sheet("https://docs.google.com/spreadsheets/d/1legFKoXPIPQsNmkzSJ16VjrEzXqmFb2xVauIH8cZHYM/edit?usp=sharing", sheet = "amac_msat_deployment_2021_p1_53_119_114_05", col_names = TRUE) |>
+clean_names()
+View(msat3)
+msat_data <- rbind(msat1, msat2, msat3)
+save(msat_data, file ="msat_data.Rdata")
+msat_data <- rbind(msat1, msat2, msat3)
+save(msat_data, file ="msat_data.Rdata")
+msat_data <- rbind(msat1, msat2, msat3)
+save(msat_data, file ="data/msat_data.Rdata")
+load("data/msat_data.Rdata")
+#extract metadata from tick IDs
+msat_data <- msat_data |>
+mutate(
+#append .0 specimen number when not present.
+#This allows anchoring the regex at the end rather than the beginning, so missing transect codes don't break things.
+id = case_when(
+str_detect(id, ".*\\.[0-9]$") ~ id,
+str_detect(id, "([^\\.])") ~ str_replace(id, "(.*)", "\\1\\.0")),
+#new sex column
+sex = case_when(
+str_detect(id, ".*3[0-9]{2}\\.") == "TRUE" ~ "F",
+str_detect(id, ".*4[0-9]{2}\\.") == "TRUE" ~ "M",
+TRUE ~ NA_character_),
+#new species column
+species = case_when(
+str_detect(id, ".*4[0-9]{3}\\.") == "TRUE" ~ "Am",
+str_detect(id, ".*2[0-9]{3}\\.") == "TRUE" ~ "Aa",
+TRUE ~ NA_character_),
+#new site column
+site = case_when(
+str_detect(id, "SS") == "TRUE" ~ str_extract(id, "SS[0-9]{2}"),
+str_detect(id, "SS") == "FALSE" ~ str_extract(id, "^[A-Z]{2,4}"),
+TRUE ~ NA_character_),
+#new transect column
+transect = case_when(
+str_detect(id, "SS") == "TRUE" ~ NA_character_,
+str_detect(id, "SS") == "FALSE" ~ str_extract(id, "(?<=^[A-Z]{1,4})[0-9]"),
+TRUE ~ NA_character_),
+#new week column
+week = case_when(
+str_detect(id, "^[A-Z]{2,4}[0-9]{9}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{1})[0-9]{2}"),
+str_detect(id, "^[A-Z]{2,4}[0-9]{8}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4})[0-9]{2}"),
+TRUE ~ NA_character_),
+#new year column
+year = case_when(
+str_detect(id, "^[A-Z]{2,4}[0-9]{9}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{3})[0-9]{2}"),
+str_detect(id, "^[A-Z]{2,4}[0-9]{8}\\.") == "TRUE" ~ str_extract(id, "(?<=^[A-Z]{2,4}[0-9]{2})[0-9]{2}"),
+TRUE ~ NA_character_)
+)
+#united genotype column for genind
+msat_data_genind <- msat_data |>
+filter(status == "PS") |>
+filter(marker_name != "Am103" & marker_name != "Am20" ) |>
+select(id, site, marker_name, allele_1, allele_2) |>
+unite("genotype", allele_1, allele_2)
+#pivot wider
+msat_data_wide_genind <- msat_data_genind |>
+pivot_wider(names_from = marker_name,
+values_from = genotype) |>
+column_to_rownames(var="id")

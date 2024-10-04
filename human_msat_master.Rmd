@@ -1,0 +1,228 @@
+---
+title: "amac_msat_master"
+output: html_document
+date: "2024-02-21"
+---
+
+```{r setup, include=FALSE}
+
+#package loadings
+if (!require('adegenet')) install.packages('adegenet')
+if (!require('pegas')) install.packages('pegas')
+if (!require('janitor')) install.packages('janitor')
+if (!require('tidytext')) install.packages("tidytext")
+if (!require('hierfstat')) install.packages("hierfstat")
+if (!require('pegas')) install.packages("pegas")
+if (!require('devtools')) install.packages('devtools')
+library(devtools)
+#install_github("mkanai/deFinetti")
+#install.packages("StAMPP")
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+#BiocManager::install("SNPRelate")
+#install.packages('dartR')
+
+##library loadings
+library('adegenet')
+library('ggplot2')
+library('dplyr')
+library('tidyverse')
+library('readxl')
+library('janitor')
+library('pegas')
+library('tidyverse')
+library('tidyr')
+library('tidytext')
+library('googlesheets4')
+library('hierfstat')
+library('pegas')
+library('StAMPP')
+library('dartR')
+
+#set working directory to present directory
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r data import (.csv from Geneious)}
+#Data import via Excel
+human_msat_data <- read_csv("~/Library/CloudStorage/OneDrive-OldDominionUniversity/BIOL380_381/RIPBIO_24_25/data files/human_msat_data.csv") |>
+  clean_names()
+
+View(human_msat_data)
+
+```
+```{r data wrangling}
+#pivot_longer
+human_msat_data_wrangled <- human_msat_data |>
+  pivot_longer(
+    cols = !name,
+    names_to = c("allele", ".value"), 
+      names_pattern = "([A-Za-z0-9]+)_([12])"
+    ) |>
+  unite("genotype", "1", "2") |>
+  pivot_wider(
+    names_from = allele,
+    values_from = genotype
+  ) |>
+  column_to_rownames(var = "name")
+
+```
+```{r make genind, genpop objects}
+
+msat_genind <- 
+ df2genind(X = human_msat_data_wrangled, sep = '_', ploidy = 2, ncode = 3, NA.char = NA)
+
+sum_msat_genind <- (summary(msat_genind))
+sum_msat_genind
+
+#make genpop object
+
+msat_genpop <- genind2genpop(msat_genind)
+```
+```{r allelic frequencies}
+
+#make a frequency table using makefreq from adegenet
+
+afreq <- as.data.frame(makefreq(msat_genpop)) |>
+  rownames_to_column(var = "site") |>
+  pivot_longer(
+    cols = -c(site), 
+    names_to = c("locus", "allele"), 
+    names_pattern = "([A-Za-z0-9]+)\\.([0-9]{3})",
+    values_to = "frequency"
+  ) |> drop_na()
+
+#make frequency facetplot
+freq_chart <- afreq |>
+  ggplot(
+    aes(x = reorder_within(allele, as.numeric(allele),locus), y = frequency)) +      
+  geom_bar(position=position_dodge(), stat="identity") + 
+  scale_x_reordered() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  facet_grid(~locus, scales="free_x")
+freq_chart
+
+
+```
+```{r adegenet statistics}
+#polymorphic loci
+
+sum_msat_genind <- (summary(msat_genind))
+sum_msat_genind
+
+poly<-isPoly(msat_genind, by=c("locus"))
+poly
+
+## observed vs expected heterozygosity by locus
+locus <- levels(msat_genind@loc.fac)
+observed.hetero<- sum_msat_genind$Hobs
+expected.hetero<- sum_msat_genind$Hexp 
+
+##NEW
+#plot expected vs. observed heterozygosity
+my_table <- data.frame(locus = locus, observed.hetero = observed.hetero, expected.hetero = expected.hetero) |>
+  mutate (deltaH = expected.hetero-observed.hetero)
+
+table_long <- pivot_longer(my_table, c(expected.hetero,observed.hetero), names_to = "het")
+
+het_plot <- ggplot(table_long, aes(x = locus)) +
+  geom_bar(aes(y = value, fill=het), stat = "identity", position = position_dodge()) +
+  theme(axis.text.x = element_text(size = 6),
+panel.background = element_blank())
+
+plot(het_plot)
+
+delta_plot <- ggplot(table_long, aes(x = locus)) +
+  geom_bar(aes(y = deltaH), stat = "identity", position = position_dodge()) +
+  theme(axis.text.x = element_text(size = 6),
+panel.background = element_blank())
+  
+plot(delta_plot)
+
+#Test of HWE from adegenet
+hw.test(msat_genind, B=1000)
+```
+```{r calculate F statistics}
+#calculates basic population F statistics
+#Fst is population/total
+#Fis is individual/population
+#Fit is inbreeding statistic
+
+wc(msat_genind)
+
+library(pegas)
+ftab <- Fst(as.loci(msat_genind))
+ftab # per-locus F-statistics
+
+#95% confidence intervals for global statistics
+msat_hf <- genind2hierfstat(msat_genind)
+boot.vc(msat_hf[1], msat_hf[-1])$ci
+
+matFst <- genet.dist(msat_genind[1:50, ], method = "Nei87")
+matFst
+
+matFst <- genet.dist(msat_genind[1:50, ], method = "WC84")
+matFst
+
+msat_genlight <- gi2gl(msat_genind, parallel = FALSE, verbose = NULL)
+
+# Calculate pairwise Fst values between each population
+pairwise.fst.p <- stamppFst(msat_genlight, 100, 95, 1)
+View(pairwise.fst.p)
+
+pairwise.fst.p[["Pvalues"]]
+
+```
+```{r inbreeding}
+Fsamp<-inbreeding(msat_genind, res.type = c("sample"), N=200, M = 20000)
+
+Fdens <- inbreeding(msat_genind, res.type="function")
+
+Fmean=sapply(Fsamp, mean)
+hist(Fmean, col="orange", xlab="mean value of F",
+main="Distribution of mean F across individuals")
+
+Fest <- inbreeding(msat_genind, res.type = "estimate")
+
+mostInbred <- which.max(Fest)
+leastInbred <- which.min(Fest)
+anyInbred <- Fest[["CV25214301.2"]]
+
+#most inbred individual
+plot(Fdens[[mostInbred]], ylab = "Density", xlab = "F",
+     main = paste("Probability density of F values\nfor", names(mostInbred)))
+abline(v = Fest[mostInbred], col = "red", lty = 2)
+legend("topright", legend = "MLE", col = "red", lty = 2)
+
+#least inbred individual
+plot(Fdens[[leastInbred]], ylab = "Density", xlab = "F",
+     main = paste("Probability density of F values\nfor", names(leastInbred)))
+abline(v = Fest[leastInbred], col = "red", lty = 2)
+legend("topright", legend = "MLE", col = "red", lty = 2)
+
+#any individual
+plot(Fdens[["CV25214301.2"]], ylab = "Density", xlab = "F",
+     main = paste("Probability density of F values\nfor", "CV25214301.2"))
+abline(v = Fest[5], col = "red", lty = 2)
+legend("topright", legend = "MLE", col = "red", lty = 2)
+
+## plot of all inbreeding coefficients
+plot(Fest, ylab = "F", col = "blue",
+     main = "MLE estimates of inbreeding coefficient")
+
+
+```
+```{r deFinetti Diagram}
+library(deFinetti)
+data(GenotypeFreq)
+deFinetti.plot(GenotypeFreq, with_F_color = TRUE, without_markers = FALSE, markerlab = rownames(GenotypeFreq))
+```
+
+```{r distance correlation}
+names <- c("CV","RR","BISI","SB")
+gdist <- c(1,2,3,4)
+kmdist <- c(10,20,30,40)
+corr_tbl <- tibble(names,gdist,kmdist)
+```
